@@ -1,7 +1,4 @@
 
-
-
-
 ## methods for determining whether chalkwalker should drop chalk at the given location
 
 from time import sleep
@@ -15,10 +12,6 @@ def test(r,theta):
 
     if r < 27:
         return True
-
-
-
-
     return False
 
 
