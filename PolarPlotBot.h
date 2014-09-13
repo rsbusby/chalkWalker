@@ -19,28 +19,34 @@ class PolarPlotBot
    
     PolarPlotBot(float maxRadius, float startRadius);
  
+    PolarPlotBot(float maxRadiusGiven, float startRadius, 
+                 int radiusMotorPin, int angleMotorPin,
+                 int drawMotorPin, int hallSensePin);
+
     float rNorm();
     
     void pause();
 
     void setAngle(float a);
-
     void setRadius(float r);
     
     void advance();
-    
     void advanceRadius();
     
     void openDraw();   // move chalk dropper to open position 
                        // (usually a quarter turn, determined by Hall sensor )
-    
     void closeDraw();  // move back to closed position
  
-    void OneTurn(int channel_a, int check, int chA_pwr);  // 
+    void singleDrop();
 
-    int RhodoneaCurve(float k, float threshold);
+    void halfTurn(int motorPin, int hallSensorPin); 
 
+    void fullTurn(int channel_a, int check, int chA_pwr);  // 
+
+    // parametric curves to use for testing
+    int RhodoneaCurve(float k, float threshold);  
     int heartCurve();
+    int wedge();
 
  private:
 
@@ -59,7 +65,7 @@ class PolarPlotBot
     float radiansPerPulse;   // how much does angle increase when advancing 
     float cmPerPulse;       // forward distance equivalent for each revolution pulse
   
-    float drawAngle;    // angle in radians of the dropping/drawing mechanism
+    //float drawAngle;    // angle in radians of the dropping/drawing mechanism
   
 };
 
