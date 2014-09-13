@@ -21,7 +21,7 @@ class PolarPlotBot
  
     PolarPlotBot(float maxRadiusGiven, float startRadius, 
                  int radiusMotorPin, int angleMotorPin,
-                 int drawMotorPin, int hallSensePin);
+                 int drawMotorPin, int hallSensePin, int switchPin);
 
     float rNorm();
     

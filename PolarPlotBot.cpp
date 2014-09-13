@@ -8,14 +8,19 @@
 // and controls the 'drawing' mechanism
  
 PolarPlotBot::PolarPlotBot(float maxRadiusGiven, float startRadius){
-
-  PolarPlotBot(maxRadiusGiven, startRadius, 5,6,9,2);
+  // set default pins of
+  // radius
+  // angle
+  // drop
+  // hall
+  // switch
+  PolarPlotBot(maxRadiusGiven, startRadius, 3,9,6,2,20);
 
 }
 
 PolarPlotBot::PolarPlotBot(float maxRadiusGiven, float startRadius, 
                            int radiusMotorPin, int angleMotorPin, int drawMotorPin, 
-                           int hallSensePin){
+                           int hallSensePin, int switchPin){
 
   // set up some default vals
  
@@ -23,6 +28,7 @@ PolarPlotBot::PolarPlotBot(float maxRadiusGiven, float startRadius,
   angleMotorPin = angleMotorPin;
   drawMotorPin = drawMotorPin;
   hallSensePin = hallSensePin;
+  switchPin = switchPin;
   
   angle = 0;   // current state of angle  (radians)
   radius = startRadius; //  current state of radius (cm)
