@@ -54,8 +54,8 @@ s1 = "/dev/tty.usbserial-A600ailE"
 s2 = "/dev/tty.usbmodem12341"
 if not usingProcessing:
     ser = serial.Serial(s1, 9600) # Establish the connection on a specific port
-
-if usingProcessing:
+    write_to_comm = ser.write
+else:
     ## set up client and server to communicate with corresponding client/server on Processing
     host = socket.gethostname() # Get local machine name
 
@@ -74,9 +74,10 @@ if usingProcessing:
 
 
     sc.connect((host, cport))
+    write_to_comm = c.send
+    write_to_comm("N")
 
-    c.send("N")
-
+print "set up image"
 ## set up image
 
 # im = "new.pbm"
@@ -89,6 +90,8 @@ imTmp = "temp.png"
 
 commands.getoutput("convert " + imTmp + " -colorspace gray -threshold 35% " + im )
 
+print "DB 3"
+
 ## set up image mapping
 pim = polarImageMap.polarImageMap()
 pim.init(im)
@@ -96,18 +99,21 @@ pim.init(im)
 count = 0
 ## loop forever
 
+print "DB 6"
+
 if usingProcessing:
-    fromPlotter = sc.recv(1024)
+    #fromPlotter = sc.recv(1024)
+    a = 9
 else:
     fromPlotter = ser.readline()
 
-print "from: " + fromPlotter
+    print "from: " + fromPlotter
 
-if fromPlotter.count("Ready") < 1:
-  print "WTF"
-  sys.exit()
-else:
-  ser.write("OK")
+    if fromPlotter.count("Ready") < 1:
+      print "WTF"
+      sys.exit()
+    else:
+      ser.write("OK")
 
 while True:
 
@@ -129,13 +135,13 @@ while True:
 
     if not plotFlag: 
         #c.send("Y")   
-        ser.write("Y")
+        write_to_comm("Y")
 
 
 
     else:
         #c.send("N") 
-        ser.write("N")
+        write_to_comm("N")
 
     count = count + 1
     print count
