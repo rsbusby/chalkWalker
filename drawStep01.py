@@ -13,6 +13,8 @@ mh = Adafruit_MotorHAT()
 st1 = threading.Thread()
 st2 = threading.Thread()
 
+print "st1"
+print st1
 
 # recommended for auto-disabling motors on shutdown!
 def turnOffMotors():
@@ -23,10 +25,10 @@ def turnOffMotors():
 
 atexit.register(turnOffMotors)
 
-myStepper1 = mh.getStepper(200, 1)  	# 200 steps/rev, motor port #1
-myStepper2 = mh.getStepper(200, 2)  	# 200 steps/rev, motor port #1
-myStepper1.setSpeed(60)  		# 30 RPM
-myStepper2.setSpeed(60)  		# 30 RPM
+#myStepper1 = mh.getStepper(200, 1)  	# 200 steps/rev, motor port #1
+#myStepper2 = mh.getStepper(200, 2)  	# 200 steps/rev, motor port #1
+#myStepper1.setSpeed(60)  		# 30 RPM
+#myStepper2.setSpeed(60)  		# 30 RPM
 
 
 stepstyles = [Adafruit_MotorHAT.SINGLE, Adafruit_MotorHAT.DOUBLE, Adafruit_MotorHAT.INTERLEAVE, Adafruit_MotorHAT.MICROSTEP]
@@ -35,16 +37,6 @@ def stepper_worker(stepper, numsteps, direction, style):
 	#print("Steppin!")
 	stepper.step(numsteps, direction, style)
 	#print("Done")
-
-
-
-    
-
-# yo fractals yo
-gSimple(4, 1.6, 0.4, false)
-
-
-
 
 
 
@@ -82,48 +74,75 @@ gSimple(4, 1.6, 0.4, false)
 
 
         
-class drawbot(Object):
+class drawbot(object):
     """ Semi-port of Arduino code for wall drawing bot"""
 
     def __init__(self):
-        self.x0 = 0
-        self.y0 = 0
-        
+
+
+        self.st1 = threading.Thread()
+	self.st2 = threading.Thread()
+
         # use centimeters as units
         self.motor_sep = 71.5;
+	self.c = self.motor_sep
         self.diam1 = 0.92;
         self.diam2 = 0.89;
 
+	self.stepsPerRot = 200
+
+	# global angle
+	self.a = pi/2.0
+
+        self.x0 = 0.5*self.c
+        self.y0 = -0.87*self.c
+
+	print "initial (x,y): (" + str(self.x0) + ", " + str(self.y0) + ")" 
+
+	self.xx = self.x0
+	self.yy = self.y0
+
+	self.stepper1 = mh.getStepper(200, 1)  	# 200 steps/rev, motor port #1
+	self.stepper2 = mh.getStepper(200, 2)  	# 200 steps/rev, motor port #1
+	self.stepper1.setSpeed(60)  		# 30 RPM
+	self.stepper2.setSpeed(60)  		# 30 RPM
 
 
+	self.curStep1 = int(self.getStepsFromDist(self.c, self.diam1))
+	self.curStep2 = int(self.getStepsFromDist(self.c, self.diam2))
+
+
+
+	print "initial initial steps: " + str(self.stepper1.currentstep)
+	
 
     def gSimple(self, order, dist, angle, returnFlag):
         # resursive kernel of L- fractal  
         # globals for now
         #xx,yy,a
 
-        print("order ");
-        print(order);
+        print "order " + str(order)
+
         if order == 0:
-            forwardLine(dist, a)
+            self.forwardLine(dist, self.a)
         else:
-            gSimple(order -1, dist, angle, false);
+            self.gSimple(order -1, dist, angle, False);
 
-            a = rotateLeft(a, angle);
-            gSimple(order -1, dist, angle, true);
-            a  = rotateRight(a, angle);
+            self.a = self.rotateLeft(self.a, angle);
+            self.gSimple(order -1, dist, angle, True);
+            self.a  = self.rotateRight(self.a, angle);
 
-            gSimple(order -1, dist, angle, false);
+            self.gSimple(order -1, dist, angle, False);
 
-            a = rotateRight(a, angle);
-            gSimple(order -1, dist, angle, true);
-            a = rotateLeft(a, angle);
+            self.a = self.rotateRight(self.a, angle);
+            self.gSimple(order -1, dist, angle, True);
+            self.a = self.rotateLeft(self.a, angle);
 
         if returnFlag:
             for k in range(0, pow(2, order)):
-               backwardLine(dist,a)
+               self.backwardLine(dist, self.a)
 
-        return; 
+        return
 
 
     def rotateLeft(self,  dirAngle,  alpha):
@@ -137,28 +156,27 @@ class drawbot(Object):
     
 
     def forwardLine(self,  dist,  dirAngle):
-        x= xx;
-        y=yy;
+        x = self.xx;
+        y = self.yy;
         dx = cos(dirAngle) * dist;
         dy = sin(dirAngle) * dist;
 
         #
-        line(x, y, x  + dx, y + dy);  # for Processing
+        # line(x, y, x  + dx, y + dy);  # for Processing
 
-        xx = x+ dx;
-        yy = y+dy;
+        self.xx = x+ dx;
+        self.yy = y+dy;
 
-        print(xx);
-        print("  ");
-        print(yy);
+	print str(dx) + " " + str(dy)
+        print str(self.xx) + "  " + str(self.yy)
 
-        goToXY(xx,yy);
+        self.goToXY(self.xx,self.yy);
 
         return;
 
 
     def backwardLine(self,  dist,  dirAngle):
-        forwardLine(-dist,dirAngle)
+        self.forwardLine(-dist,dirAngle)
     
 
     def getDirection(self, dist):
@@ -169,7 +187,7 @@ class drawbot(Object):
 
     def getStepsFromDist(self, dcm, diam):
       circ = diam * pi;
-      return dcm / circ * stepsPerRot;
+      return dcm / circ * self.stepsPerRot;
 
     def getL2FromXY(self, x, y):
       #c is the motor spacing
@@ -178,45 +196,65 @@ class drawbot(Object):
 
     def getL1FromXY(self, x, y):
         # c is the motor spacing 
-        x2 = c-x;
+        x2 = self.c-x;
         return sqrt(x2*x2 + y*y)
         
         
     def goToXY(self, x, y):
         """x, y are s """
-        x = x + self.x0
-        y = self.y0 - y  #y was flipped
+
+	print self.st1
+	print "go to: " +str(x) + " " + str(y)
+
+        #x = x - self.x0
+        #y = self.y0 - y  #y was flipped
   
         print("X Y Current pos ");
         print(x);
-        print(", ");
         print(y);
   
         print("X Y Going to ");
 
-        L1 = getL1FromXY(x, y);
-        L2 = getL2FromXY(x, y);
+        L1 = self.getL1FromXY(x, y);
+        L2 = self.getL2FromXY(x, y);
 # #  
-# #  print("L1 L2 Going to ");
-# #  print(L1);
-# #  print(", ");
-# #  print(L2);
+	print("L1 L2 Going to ");
+	print(L1);
+	print(L2);
 
-        steps1 = int(getStepsFromDist(L1, diam1))
-        steps2 = int(getStepsFromDist(L2, diam2))
+
+        steps1 = int(self.getStepsFromDist(L1, self.diam1))
+        steps2 = int(self.getStepsFromDist(L2, self.diam2))
   
-# #  print("Absolute step position: ");
-# #  print(steps1);
-# #  print(", ");
-# #  print(steps2);
 
-        stepsToGo1 = abs(steps1 - stepper1.currentstep )
-        stepsToGo2 = abs(steps2 - stepper2.currentstep )
-
-# #  print("Steps to Go:  ");
-# #  print(stepsToGo1);
+	print("Absolute step position: ");
+	print(steps1);
 # #  print(", ");
-# #  print(stepsToGo2);
+	print(steps2);
+
+	stepsToGoSigned1 = (steps1 - self.curStep1 )
+	stepsToGoSigned2 = (steps2 - self.curStep2 )
+
+        stepsToGo1 = abs(steps1 - self.curStep1 )
+        stepsToGo2 = abs(steps2 - self.curStep2 )
+
+	if stepsToGoSigned1 >= 0:
+            dir1 = Adafruit_MotorHAT.FORWARD
+	    dirSign1 = 1
+	else:
+            dir1 = Adafruit_MotorHAT.BACKWARD
+	    dirSign1 = -1
+	if stepsToGoSigned2 >= 0:
+            dir2 = Adafruit_MotorHAT.FORWARD
+	    dirSign2 = 1
+	else:
+            dir2 = Adafruit_MotorHAT.BACKWARD
+	    dirSign2 = -1
+
+	print("Steps to Go:  ");
+	print(stepsToGo1);
+	print(", ");
+	print(stepsToGo2);
 
         speedRatio1to2 = 1
         if stepsToGo2 != 0 and stepsToGo1 != 0:
@@ -224,8 +262,8 @@ class drawbot(Object):
         print("speed ratio: ");  
         print(speedRatio1to2);
   
-        stepper1.moveTo(steps1);
-        stepper2.moveTo(steps2);
+        #myStepper1.moveTo(steps1);
+        #myStepper2.moveTo(steps2);
 
         baseSpeed = 40
         baseAccel = 200
@@ -250,26 +288,21 @@ class drawbot(Object):
                 accel2 = baseAccel;
 
 
-# #  print("speeds ::");
-# #  print(max1);
+	print("speeds ::");
+	print(max1);
 # #  print(", ");
-# #  print(accel1);
-# #  print("       ::");
-# #
-# #  print(max2);
-# #  print(", ");
-# #  print(accel2);
-# #  print("");
+	print(max2);
 
+	#print "DIRS: " + str(dir1) + " " + str(dir2)
  
 # #  print("dtg 00 :");
 # #
-# #    print(stepper1.distanceToGo());
+# #    print(myStepper1.distanceToGo());
 # #    print("   ");
-# #    print(stepper2.distanceToGo());
+# #    print(myStepper2.distanceToGo());
   
-        dir1 = getDirection(stepper1.distanceToGo() );
-        dir2 = getDirection(stepper2.distanceToGo() );
+        #dir1 = self.getDirection(steps1 );
+        #dir2 = self.getDirection(steps2 );
 
 # #
 # # print("DIRECTION : ");
@@ -278,40 +311,64 @@ class drawbot(Object):
 # #
 # #  print(dir2);
 
+	print " " 
+	print stepsToGo1
+	print dir1
+	print stepstyles[1]
+	import time
+	stepsToGo1 = 30
+	stepsToGo2 = 20
+        self.stepper1.setSpeed(30);
+        self.stepper2.setSpeed(3);
+	while self.st1.isAlive() or self.st2.isAlive(): 
+            print "waitung"
+            time.sleep(1)
+	if not self.st1.isAlive() and not self.st2.isAlive():
+            print "initial steps: " + str(self.stepper1.currentstep)
+            self.st1 = threading.Thread(target=stepper_worker, args=(self.stepper1, stepsToGo1, dir1, stepstyles[1],))
+	    self.st2 = threading.Thread(target=stepper_worker, args=(self.stepper2, stepsToGo2, dir2, stepstyles[1],))
+	    self.st1.start()
 
-        stepper1.setSpeed(max1 * dir1);
-        stepper2.setSpeed(max2 * dir2);
+	    self.st2.start()
+	    print "old steps: " + str(self.curStep1) + " " + str(self.curStep2)
+	    self.curStep1 += stepsToGo1 * dirSign1
+	    self.curStep2 += stepsToGo2 * dirSign2
+	    print "new steps: " + str(self.curStep1) + " " + str(self.curStep2)
+            import time
+	    time.sleep(6)
+	else:
+            print "NOT RUNNING"
+	
 
+# #  myStepper1.setMaxSpeed(max1);
+# #  myStepper1.setAcceleration(accel1);
+# #  myStepper2.setMaxSpeed(max2);
+# #  myStepper2.setAcceleration(accel2);
 
-# #  stepper1.setMaxSpeed(max1);
-# #  stepper1.setAcceleration(accel1);
-# #  stepper2.setMaxSpeed(max2);
-# #  stepper2.setAcceleration(accel2);
-
-        while (stepper1.distanceToGo() * dir1 > 0) or (stepper2.distanceToGo() * dir2 > 0):
+#        while (myStepper1.distanceToGo() * dir1 > 0) or (myStepper2.distanceToGo() * dir2 > 0):
 # #    print("stepping, ");
 # #    print("   , dtg:");
 # #
-# #    print(stepper1.distanceToGo());
+# #    print(myStepper1.distanceToGo());
 # #    print("   ");
-# #    print(stepper2.distanceToGo());
-            stepper1.runSpeed();
-            stepper2.runSpeed();
+# #    print(myStepper2.distanceToGo());
+#            myStepper1.runSpeed();
+#            myStepper2.runSpeed();
   
 
 
     def upRight(self, d, ratio, level, x, y):
         if (level < maxLevel):
 
-            up(d,x,y);
+            self.up(d,x,y);
             y = y -d;
-            right(d,x,y);
+            self.right(d,x,y);
             x = x +d;
-            downRight(d*ratio, ratio, level + 1, x, y);
-            upRight(d*ratio, ratio, level +1, x,y);
-            left(d,x,y);
+            self.downRight(d*ratio, ratio, level + 1, x, y);
+            self.upRight(d*ratio, ratio, level +1, x,y);
+            self.left(d,x,y);
             x = x-d;
-            down(d,x,y);
+            self.down(d,x,y);
             y = y+d;
 
 
@@ -321,15 +378,15 @@ class drawbot(Object):
     def upLeft(self, d, ratio, level, x, y):
         if (level < maxLevel):
 
-             up(d,x,y);
+             self.up(d,x,y);
              y=y-d;
-             left(d,x,y);
+             self.left(d,x,y);
              x=x-d;
-             downLeft(d*ratio, ratio, level + 1,x,y);
-             upLeft(d*ratio, ratio, level +1,x,y);
-             right(d,x,y);
+             self.downLeft(d*ratio, ratio, level + 1,x,y);
+             self.upLeft(d*ratio, ratio, level +1,x,y);
+             self.right(d,x,y);
              x=x+d;
-             down(d, x,y);
+             self.down(d, x,y);
              y=y+d;
 
 
@@ -337,34 +394,42 @@ class drawbot(Object):
 
 
     def downLeft(self, d, ratio, level,x, y):
-        upRight(-d, ratio, level,x,y); 
+        self.upRight(-d, ratio, level,x,y); 
         return
     
 
     def downRight(self, d, ratio, level, x, y):
-        upLeft(-d, ratio, level,x,y); 
+        self.upLeft(-d, ratio, level,x,y); 
         return
     
 
     def up(self, d,x, y):
 
-        goToXY(x,y-1.6*d);
+        self.goToXY(x,y-1.6*d);
         return
     
 
     def right(self, d,x, y):
 
-      goToXY(x+d,y);
+      self.goToXY(x+d,y);
       return
     
 
     def down(self, d,x, y):
-      up(-d,x,y);
+      self.up(-d,x,y);
       return
     
 
     def left(self, d,x, y):
-      right(-d,x,y);
+      self.right(-d,x,y);
       return
     
+
+
+# yo fractals yo
+d = drawbot()
+d.gSimple(1, 1.6, 0.4, False)
+
+
+
 
